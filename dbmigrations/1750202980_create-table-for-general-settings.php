@@ -16,7 +16,6 @@ class CreateTableForGeneralSettings extends Migration
       ->string('ds_context', 60)
       ->string('ds_format', 20)->setDefaultValue('text')
       ->string('ds_fieldname', 60)
-      ->text('tx_fieldvalue')->nullable()->setDefaultValue(null)
-      ->Foreign('id_iam_user_updated')->references('id_iam_user')->atTable('IAM_USER')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_SETNULL);
+      ->text('tx_fieldvalue')->nullable()->setDefaultValue(null);
   }
 }
