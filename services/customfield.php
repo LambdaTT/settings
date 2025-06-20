@@ -1,9 +1,9 @@
 <?php
 
-namespace application\services\settings;
+namespace Settings\Services;
 
-use engine\Service;
-use engine\Dao;
+use SplitPHP\Service;
+use SplitPHP\Database\Dao;
 use Exception;
 
 class CustomField extends Service

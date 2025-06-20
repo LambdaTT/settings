@@ -1,8 +1,8 @@
 <?php
 
-namespace application\services\settings;
+namespace Settings\Services;
 
-use engine\Service;
+use SplitPHP\Service;
 
 class Settings extends Service
 {
