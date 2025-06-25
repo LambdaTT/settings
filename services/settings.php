@@ -28,7 +28,7 @@ class Settings extends Service
     foreach ($vars as $var) {
       $object[$var->ds_fieldname] = $var->tx_fieldvalue;
     }
-    return (object) $object;
+    return empty($object) ? null : (object) $object;
   }
 
   public function get($context, $fieldname)
@@ -37,6 +37,8 @@ class Settings extends Service
       ->filter('ds_context')->equalsTo($context)
       ->and('ds_fieldname')->equalsTo($fieldname)
       ->first();
+
+    if (empty($record)) return null;
 
     switch ($record->ds_format) {
       case 'json':
@@ -69,5 +71,13 @@ class Settings extends Service
       ->filter('ds_context')->equalsTo($context)
       ->and('ds_fieldname')->equalsTo($fieldname)
       ->update($data);
+  }
+
+  public function remove($context, $fieldname)
+  {
+    return $this->getDao(self::TABLE)
+      ->filter('ds_context')->equalsTo($context)
+      ->and('ds_fieldname')->equalsTo($fieldname)
+      ->delete();
   }
 }
