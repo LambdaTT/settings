@@ -9,7 +9,7 @@ class CreateTableForGeneralSettings extends Migration
 {
   public function apply()
   {
-    $this->Table('STT_SETTINGS')
+    $this->Table('STT_SETTINGS', 'General Settings')
       ->id('id_stt_settings') // int primary key auto increment
       ->datetime('dt_updated')->setDefaultValue(DbVocab::SQL_CURTIMESTAMP())
       ->int('id_iam_user_updated')->nullable()->setDefaultValue(null)

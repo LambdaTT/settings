@@ -9,7 +9,7 @@ class CreateTablesRelatedToCustomFields extends Migration
 {
   public function apply()
   {
-    $this->Table('STT_SETTINGS_CUSTOMFIELD')
+    $this->Table('STT_SETTINGS_CUSTOMFIELD', 'Custom Field')
       ->id('id_stt_settings_customfield') // int primary key auto increment
       ->string('ds_entityname', 60)
       ->string('ds_fieldname', 60)
@@ -18,7 +18,7 @@ class CreateTablesRelatedToCustomFields extends Migration
       ->string('do_is_required', 1)->setDefaultValue('N')
       ->text('tx_rules')->nullable()->setDefaultValue(null);
 
-    $this->Table('STT_SETTINGS_CUSTOMFIELD_VALUE')
+    $this->Table('STT_SETTINGS_CUSTOMFIELD_VALUE', 'Custom Field Value')
       ->id('id_stt_settings_customfield_value') // int primary key auto increment
       ->int('id_stt_settings_customfield')
       ->int('id_reference_entity')
