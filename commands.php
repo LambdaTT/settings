@@ -90,6 +90,89 @@ class Commands extends Cli
       $rows = $this->getService('settings/settings')->remove($context, $fieldname);
       Utils::printLn($rows ? "  >> Setting removed successfully!" : "  >> No setting '{$fieldname}' found to remove in context '{$context}'.");
     });
+
+    // Help command
+    $this->addCommand('help', function () {
+      /** @var \Utils\Services\CliHelper $helper */
+      $helper = $this->getService('utils/clihelper');
+      Utils::printLn($helper->ansi(strtoupper("Welcome to the Settings Help Center!"), 'color: magenta; font-weight: bold'));
+
+      // 1) Define metadata for each command
+      $commands = [
+        ':from:context'   => [
+          'usage' => 'settings:from:context [--context=<context>]',
+          'desc'  => 'Show an object containing all settings from a context.',
+          'flags' => [
+            '--context=<context>'          => 'Context from which you want to see all settings',
+          ],
+        ],
+        ':change' => [
+          'usage' => 'settings:change',
+          'desc'  => 'Interactively add or change a setting.',
+        ],
+        ':remove' => [
+          'usage' => 'settings:remove [--context=<context>]',
+          'desc'  => 'Delete a setting by its context and field name.',
+          'flags' => [
+            '--context=<context>'          => 'Context from which to remove the setting',
+          ],
+        ],
+        ':help'             => [
+          'usage' => 'settings:help',
+          'desc'  => 'Show this help screen.',
+        ],
+      ];
+
+      // 2) Summary table
+      Utils::printLn($helper->ansi("\nAvailable commands:\n", 'color: cyan; text-decoration: underline'));
+
+      $rows = [
+        [
+          'cmd'  => 'settings:from:context',
+          'desc' => 'Show an object containing all settings from a context.',
+          'opts' => '--context',
+        ],
+        [
+          'cmd'  => 'settings:change',
+          'desc' => 'Interactively add or change a setting',
+          'opts' => '(no flags)',
+        ],
+        [
+          'cmd'  => 'settings:remove',
+          'desc' => 'Delete a setting by its context and field name',
+          'opts' => '--context',
+        ],
+        [
+          'cmd'  => 'settings:help',
+          'desc' => 'Show this help screen',
+          'opts' => '(no flags)',
+        ],
+      ];
+
+      $helper->table($rows, [
+        'cmd'  => 'Command',
+        'desc' => 'Description',
+        'opts' => 'Options',
+      ]);
+
+      // 3) Detailed usage lists
+      foreach ($commands as $cmd => $meta) {
+        Utils::printLn($helper->ansi("\n{$cmd}", 'color: yellow; font-weight: bold'));
+        Utils::printLn("  Usage:   {$meta['usage']}");
+        Utils::printLn("  Purpose: {$meta['desc']}");
+
+        if (!empty($meta['flags'])) {
+          Utils::printLn("  Options:");
+          $flagLines = [];
+          foreach ($meta['flags'] as $flag => $explain) {
+            $flagLines[] = "{$flag}  — {$explain}";
+          }
+          $helper->listItems($flagLines, false, '    •');
+        }
+      }
+
+      Utils::printLn(''); // trailing newline
+    });
   }
 
   private function setContext($args)
