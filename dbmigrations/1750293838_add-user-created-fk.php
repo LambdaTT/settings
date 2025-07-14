@@ -2,7 +2,7 @@
 
 namespace Settings\Migrations;
 
-use SplitPHP\DbMigrations\Migration;
+use SplitPHP\DbManager\Migration;
 use SplitPHP\Database\DbVocab;
 
 class AddUserCreatedFk extends Migration
