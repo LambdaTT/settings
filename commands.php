@@ -7,7 +7,7 @@ use SplitPHP\Utils;
 
 class Commands extends Cli
 {
-  public function init()
+  public function init(): void
   {
     $this->addCommand('from:context', function ($args) {
       Utils::printLn("Welcome to the Settings Management!");
