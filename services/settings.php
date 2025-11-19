@@ -2,6 +2,7 @@
 
 namespace Settings\Services;
 
+use SplitPHP\Exceptions\BadRequest;
 use SplitPHP\Service;
 
 class Settings extends Service
@@ -16,6 +17,9 @@ class Settings extends Service
         switch ($record->ds_format) {
           case 'json':
             $record->tx_fieldvalue = json_decode($record->tx_fieldvalue);
+            break;
+          case 'file':
+            $record->tx_fieldvalue = $this->getService('filemanager/file')->get(['id_fmn_file' => $record->tx_fieldvalue])?->ds_url;
             break;
         }
       });
@@ -44,6 +48,9 @@ class Settings extends Service
       case 'json':
         $record->tx_fieldvalue = json_decode($record->tx_fieldvalue);
         break;
+      case 'file':
+        $record->tx_fieldvalue = $this->getService('filemanager/file')->get(['id_fmn_file' => $record->tx_fieldvalue])?->ds_url;
+        break;
     }
 
     return $record;
@@ -53,13 +60,22 @@ class Settings extends Service
   {
     $loggedUser = $this->getService('iam/session')->getLoggedUser();
 
+    if ($format == 'file' && $this->getService('modcontrol/control')->moduleExists('filemanager')) {
+      if (!isset($_FILES[$fieldname]))
+        throw new BadRequest("Nenhum arquivo foi enviado para o campo '$fieldname'");
+
+      $upload = [...$_FILES[$fieldname]];
+      $file = $this->getService('filemanager/file')->create($upload['name'], $upload['tmp_name'], 'Y');
+      $value = $file->id_fmn_file;
+    }
+
     // Set values
     $data = [
       'ds_context' => $context,
       'ds_format' => $format ?: 'text',
       'ds_fieldname' => $fieldname,
       'tx_fieldvalue' => $value,
-      'id_iam_user_updated' => empty($loggedUser) ? null : $loggedUser->id_iam_user
+      'id_iam_user_updated' => $loggedUser?->id_iam_user ?? null
     ];
 
     // Set refs
@@ -75,6 +91,14 @@ class Settings extends Service
 
   public function remove($context, $fieldname)
   {
+    $record = $this->get($context, $fieldname);
+    $fileModExist = $this->getService('modcontrol/control')->moduleExists('filemanager');
+    $isFile = $fileModExist && $record?->ds_format == 'file';
+    $value = $record?->tx_fieldvalue;
+
+    if ($isFile && !empty($value))
+      $this->getService('filemanager/file')->remove(['id_fmn_file' => $value]);
+
     return $this->getDao(self::TABLE)
       ->filter('ds_context')->equalsTo($context)
       ->and('ds_fieldname')->equalsTo($fieldname)
