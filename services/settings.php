@@ -58,6 +58,8 @@ class Settings extends Service
 
   public function change($context, $fieldname, $value, $format = 'text')
   {
+    // Set refs
+    $record = $this->get($context, $fieldname);
     $loggedUser = $this->getService('iam/session')->getLoggedUser();
 
     if ($format == 'file' && $this->getService('modcontrol/control')->moduleExists('filemanager')) {
@@ -67,6 +69,7 @@ class Settings extends Service
       $upload = [...$_FILES[$fieldname]];
       $file = $this->getService('filemanager/file')->create($upload['name'], $upload['tmp_name'], 'Y');
       $value = $file->id_fmn_file;
+      $this->getService('filemanager/file')->remove(['id_fmn_file' => $record?->tx_fieldvalue ?: null]);
     }
 
     // Set values
@@ -77,9 +80,6 @@ class Settings extends Service
       'tx_fieldvalue' => $value,
       'id_iam_user_updated' => $loggedUser?->id_iam_user ?? null
     ];
-
-    // Set refs
-    $record = $this->get($context, $fieldname);
 
     if (empty($record)) return $this->getDao(self::TABLE)->insert($data);
 
