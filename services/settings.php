@@ -74,6 +74,7 @@ class Settings extends Service
 
     // Set values
     $data = [
+      'ds_key' => 'stt-' . uniqid(),
       'ds_context' => $context,
       'ds_format' => $format ?: 'text',
       'ds_fieldname' => $fieldname,
