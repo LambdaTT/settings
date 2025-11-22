@@ -4,7 +4,9 @@ namespace Settings\Services;
 
 use SplitPHP\Service;
 use SplitPHP\Database\Dao;
-use Exception;
+use SplitPHP\Exceptions\BadRequest;
+use SplitPHP\Exceptions\Conflict;
+use SplitPHP\Exceptions\FailedValidation;
 
 class CustomField extends Service
 {
@@ -33,16 +35,16 @@ class CustomField extends Service
       ->and('ds_fieldname')->equalsTo($data['ds_fieldname'])
       ->find();
 
-    if(!empty($record)) throw new Exception ("Já existe um campo {$data['ds_fieldlabel']} neste cadastro.", CONFLICT);
+    if (!empty($record)) throw new Conflict("Já existe um campo {$data['ds_fieldlabel']} neste cadastro.");
 
-    if(isset($data['do_fieldtype'])){
-      if(!in_array($data['do_fieldtype'], ['T','N']))
-        throw new Exception('Preenchimento incorreto do "Tipo de campo".', VALIDATION_FAILED);
+    if (isset($data['do_fieldtype'])) {
+      if (!in_array($data['do_fieldtype'], ['T', 'N']))
+        throw new BadRequest('O Tipo do Campo fornecido é inválido.');
     }
-    
-    if(isset($data['do_is_required'])) {
-      if(!in_array($data['do_is_required'], ['Y','N']))
-        throw new Exception('Preenchimento incorreto do campo "Obrigatório".', VALIDATION_FAILED);
+
+    if (isset($data['do_is_required'])) {
+      if (!in_array($data['do_is_required'], ['Y', 'N']))
+        throw new BadRequest('Opção de obrigatoriedade inválida.');
     }
 
     return $this->getDao(self::TABLE)->insert($data);
@@ -59,7 +61,6 @@ class CustomField extends Service
   /////////////////
   // VALUE FUNCTIONS
   /////////////////
-
   public function getValuesOfRegister($entityName, $entityId)
   {
     $query = "SELECT f.ds_fieldname, val.tx_value 
@@ -76,8 +77,10 @@ class CustomField extends Service
       ->filter('entityName')->equalsTo($entityName)
       ->and('entityId')->equalsTo($entityId)
       ->fetch(
-          function($item) use (&$result) {$result[$item->ds_fieldname] = empty($item->tx_value) ? null : $item->tx_value;}, 
-          $query
+        function ($item) use (&$result) {
+          $result[$item->ds_fieldname] = empty($item->tx_value) ? null : $item->tx_value;
+        },
+        $query
       );
 
     return (object) $result;
@@ -87,31 +90,31 @@ class CustomField extends Service
   {
     // Filter $data
     $data = $this->filterCustomFieldData($entityName, $data);
-    
+
     // Removes old values
     $deleted = $this->removeValuesOfRegister($entityName, $entityId);
 
     // Do the update
     $updated = $this->getDao(self::TABLE)
-      ->filter('ds_entityname')->equalsTo($entityName) 
-      ->fetch(function($field) use ($entityId, $data) {
-          if($field->do_is_required === 'Y' && empty($data[$field->ds_fieldname]))
-            throw new Exception("O campo {$field->ds_fieldlabel} é obrigatório", BAD_REQUEST);       
-          
-          if(empty($data[$field->ds_fieldname])) return;
+      ->filter('ds_entityname')->equalsTo($entityName)
+      ->fetch(function ($field) use ($entityId, $data) {
+        if ($field->do_is_required === 'Y' && empty($data[$field->ds_fieldname]))
+          throw new FailedValidation("O campo {$field->ds_fieldlabel} é obrigatório");
 
-          eval($field->tx_rules);
+        if (empty($data[$field->ds_fieldname])) return;
 
-          $this->getDao(self::TABLE_VAL)->insert([
-            'id_stt_settings_customfield' => $field->id_stt_settings_customfield,
-            'id_reference_entity' => $entityId,
-            'tx_value' => $data[$field->ds_fieldname]
-          ]);
-        });
+        eval($field->tx_rules);
+
+        $this->getDao(self::TABLE_VAL)->insert([
+          'id_stt_settings_customfield' => $field->id_stt_settings_customfield,
+          'id_reference_entity' => $entityId,
+          'tx_value' => $data[$field->ds_fieldname]
+        ]);
+      });
 
     Dao::flush();
-    
-    if($deleted) return count($updated);
+
+    if ($deleted) return count($updated);
 
     return $this->getValuesOfRegister($entityName, $entityId);
   }
@@ -122,17 +125,17 @@ class CustomField extends Service
 
     $this->getDao(self::TABLE)
       ->filter('ds_entityname')->equalsTo($entityName)
-      ->fetch(function($field) use ($entityId, &$deleteCount) {
-          $deleteCount += $this->getDao(self::TABLE_VAL)
-            ->filter('id_stt_settings_customfield')->equalsTo($field->id_stt_settings_customfield)
-            ->and('id_reference_entity')->equalsTo($entityId)
-            ->delete();
-        });
+      ->fetch(function ($field) use ($entityId, &$deleteCount) {
+        $deleteCount += $this->getDao(self::TABLE_VAL)
+          ->filter('id_stt_settings_customfield')->equalsTo($field->id_stt_settings_customfield)
+          ->and('id_reference_entity')->equalsTo($entityId)
+          ->delete();
+      });
 
     return $deleteCount;
   }
 
- /**
+  /**
    * Removes any information that is not related to custom fields.
    * 
    * @param   string  $entityName The name of the entity that serves as a reference.
@@ -143,7 +146,7 @@ class CustomField extends Service
   {
     $keys = [];
 
-    foreach($this->fieldsOfEntity($entityName) as $field){
+    foreach ($this->fieldsOfEntity($entityName) as $field) {
       $keys[] = $field->ds_fieldname;
     }
 
@@ -161,7 +164,7 @@ class CustomField extends Service
   {
     $keys = [];
 
-    foreach($this->fieldsOfEntity($entityName) as $field){
+    foreach ($this->fieldsOfEntity($entityName) as $field) {
       $keys[] = $field->ds_fieldname;
     }
 

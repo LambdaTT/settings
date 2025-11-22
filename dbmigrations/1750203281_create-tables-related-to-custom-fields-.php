@@ -22,7 +22,7 @@ class CreateTablesRelatedToCustomFields extends Migration
       ->id('id_stt_settings_customfield_value') // int primary key auto increment
       ->int('id_stt_settings_customfield')
       ->int('id_reference_entity')
-      ->text('tx_rules')
+      ->text('tx_value')
       ->Foreign('id_stt_settings_customfield')
         ->references('id_stt_settings_customfield')
         ->atTable('STT_SETTINGS_CUSTOMFIELD')
