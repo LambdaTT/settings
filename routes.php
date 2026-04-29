@@ -45,17 +45,13 @@ class Settings extends WebService
       ]);
 
       $body = $request->getBody();
+      $data = isset($body['payload']) && is_array($body['payload']) ? $body['payload'] : $body;
 
-      foreach ($body as $field) {
+      foreach ($data as $field) {
         // Array de Objetos
-        if (is_array($field)) {
+        if (is_array($field) && isset($field['ds_context'])) {
           $this->getService('settings/settings')
-            ->change($field['ds_context'], $field['ds_fieldname'], $field['tx_fieldvalue'], $field['ds_format']);
-        } else {
-          // Objeto (Array associativo)
-          $this->getService('settings/settings')
-            ->change($body['ds_context'], $body['ds_fieldname'], $body['tx_fieldvalue'], $body['ds_format']);
-          break;
+            ->change($field['ds_context'], $field['ds_fieldname'], $field['tx_fieldvalue'] ?? '', $field['ds_format']);
         }
       }
 

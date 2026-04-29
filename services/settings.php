@@ -2,6 +2,7 @@
 
 namespace Settings\Services;
 
+use Exception;
 use SplitPHP\Exceptions\BadRequest;
 use SplitPHP\Service;
 
@@ -63,18 +64,28 @@ class Settings extends Service
     $loggedUser = $this->getService('iam/session')->getLoggedUser();
 
     if ($format == 'file' && $this->getService('modcontrol/control')->moduleExists('filemanager')) {
-      if (!isset($_FILES[$fieldname]))
-        throw new BadRequest("Nenhum arquivo foi enviado para o campo '$fieldname'");
-
-      $upload = [...$_FILES[$fieldname]];
-      $file = $this->getService('filemanager/file')->create($upload['name'], $upload['tmp_name'], 'Y');
-      $value = $file->id_fmn_file;
-      $this->getService('filemanager/file')->remove(['id_fmn_file' => $record?->tx_fieldvalue ?: null]);
+      if (isset($_FILES[$fieldname]) && $_FILES[$fieldname]['error'] !== UPLOAD_ERR_NO_FILE) {
+        $upload = [...$_FILES[$fieldname]];
+        $file = $this->getService('filemanager/file')->add($upload['name'], $upload['tmp_name'], 'Y');
+        $value = $file->id_fmn_file;
+        if (!empty($record?->tx_fieldvalue)) {
+          $this->getService('filemanager/file')->remove(['id_fmn_file' => $record->tx_fieldvalue]);
+        }
+      } else {
+        if ($value === '' || $value === null) {
+          if (!empty($record?->tx_fieldvalue)) {
+            $this->getService('filemanager/file')->remove(['id_fmn_file' => $record->tx_fieldvalue]);
+          }
+          $value = null;
+        } elseif (gettype($value) === 'object') {
+          $file = $this->getService('filemanager/file')->add($value->filename, $value->filepath, 'Y');
+          $value = $file->id_fmn_file;
+        } else throw new Exception("Invalid file format");
+      }
     }
 
     // Set values
     $data = [
-      'ds_key' => 'stt-' . uniqid(),
       'ds_context' => $context,
       'ds_format' => $format ?: 'text',
       'ds_fieldname' => $fieldname,
@@ -82,7 +93,10 @@ class Settings extends Service
       'id_iam_user_updated' => $loggedUser?->id_iam_user ?? null
     ];
 
-    if (empty($record)) return $this->getDao(self::TABLE)->insert($data);
+    if (empty($record)) {
+      $data['ds_key'] = 'stt-' . uniqid();
+      return $this->getDao(self::TABLE)->insert($data);
+    }
 
     return $this->getDao(self::TABLE)
       ->filter('ds_context')->equalsTo($context)
