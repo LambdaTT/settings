@@ -4,6 +4,7 @@ namespace Settings\Services;
 
 use Exception;
 use SplitPHP\Exceptions\BadRequest;
+use SplitPHP\EventDispatcher;
 use SplitPHP\Service;
 
 class Settings extends Service
@@ -84,24 +85,44 @@ class Settings extends Service
       }
     }
 
-    // Set values
-    $data = [
-      'ds_context' => $context,
-      'ds_format' => $format ?: 'text',
-      'ds_fieldname' => $fieldname,
-      'tx_fieldvalue' => $value,
-      'id_iam_user_updated' => $loggedUser?->id_iam_user ?? null
+    // Proposed change, announced to the application before it is persisted. The
+    // 'settings.setting.changing' event wraps the persist as its main action, so
+    // an application listener may reject it (throw → persist skipped), adjust it
+    // (mutate $change->value, e.g. clamp), or stop propagation to skip it. When
+    // no listener subscribes, the persist runs unchanged. The generic module
+    // itself enforces nothing here — it only announces.
+    $change = (object) [
+      'context'   => $context,
+      'fieldname' => $fieldname,
+      'value'     => $value,
+      'format'    => $format ?: 'text',
+      'current'   => $record,
+      'user'      => $loggedUser,
     ];
 
-    if (empty($record)) {
-      $data['ds_key'] = 'stt-' . uniqid();
-      return $this->getDao(self::TABLE)->insert($data);
-    }
+    $result = null;
+    EventDispatcher::dispatch(function () use (&$result, $change) {
+      $data = [
+        'ds_context'          => $change->context,
+        'ds_format'           => $change->format,
+        'ds_fieldname'        => $change->fieldname,
+        'tx_fieldvalue'       => $change->value,
+        'id_iam_user_updated' => $change->user?->id_iam_user ?? null,
+      ];
 
-    return $this->getDao(self::TABLE)
-      ->filter('ds_context')->equalsTo($context)
-      ->and('ds_fieldname')->equalsTo($fieldname)
-      ->update($data);
+      if (empty($change->current)) {
+        $data['ds_key'] = 'stt-' . uniqid();
+        $result = $this->getDao(self::TABLE)->insert($data);
+        return;
+      }
+
+      $result = $this->getDao(self::TABLE)
+        ->filter('ds_context')->equalsTo($change->context)
+        ->and('ds_fieldname')->equalsTo($change->fieldname)
+        ->update($data);
+    }, 'settings.setting.changing', [$change]);
+
+    return $result;
   }
 
   public function remove($context, $fieldname)
