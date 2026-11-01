@@ -17,7 +17,7 @@ use SplitPHP\Event;
  * application listener may:
  *   - reject the change by throwing (e.g. a BadRequest) → persist is skipped;
  *   - adjust the change by mutating the proposed-change object returned by
- *     change() (e.g. clamping a value) → the persisted value reflects the edit;
+ *     info() (e.g. clamping a value) → the persisted value reflects the edit;
  *   - stop propagation to silently skip the persist.
  *
  * The proposed-change object carries:
@@ -55,11 +55,12 @@ class SettingChanging extends Event
 
   /**
    * Returns the (mutable) proposed-change object. Listeners read and may edit
-   * its properties in place (same instance the service persists).
+   * its properties in place (same instance the service persists). Implements the
+   * Event base's abstract info().
    *
-   * @return object The proposed change.
+   * @return object The proposed change { context, fieldname, value, format, current, user }.
    */
-  public function change(): object
+  public function info(): object
   {
     return $this->change;
   }
