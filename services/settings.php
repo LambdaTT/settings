@@ -64,6 +64,11 @@ class Settings extends Service
     $record = $this->get($context, $fieldname);
     $loggedUser = $this->getService('iam/session')->getLoggedUser();
 
+    // An empty string from the client means the field was cleared: persist it as
+    // NULL (not '') so every read treats "unconfigured" uniformly across all
+    // formats. The 'file' block below already handles its own null/'' case.
+    if ($value === '') $value = null;
+
     if ($format == 'file' && $this->getService('modcontrol/control')->moduleExists('filemanager')) {
       if (isset($_FILES[$fieldname]) && $_FILES[$fieldname]['error'] !== UPLOAD_ERR_NO_FILE) {
         $upload = [...$_FILES[$fieldname]];
