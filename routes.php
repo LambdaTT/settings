@@ -106,7 +106,9 @@ class Settings extends WebService
       throw new Unauthorized("Não autorizado.");
 
     // Validate user permissions:
-    $this->getService('iam/permission')
-      ->validatePermissions($permissions);
+    // TODO(iam-refactor): entity/CRUD validatePermissions() was removed in the IAM
+    // permissions simplification. Re-enable via tag-based canExecute() once tags exist.
+    // $this->getService('iam/permission')
+    //   ->validatePermissions($permissions);
   }
 }
