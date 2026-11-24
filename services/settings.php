@@ -3,8 +3,8 @@
 namespace Settings\Services;
 
 use Exception;
-use SplitPHP\Exceptions\BadRequest;
 use SplitPHP\EventDispatcher;
+use SplitPHP\ModsManager;
 use SplitPHP\Service;
 
 class Settings extends Service
@@ -69,7 +69,7 @@ class Settings extends Service
     // formats. The 'file' block below already handles its own null/'' case.
     if ($value === '') $value = null;
 
-    if ($format == 'file' && $this->getService('modcontrol/control')->moduleExists('filemanager')) {
+    if ($format == 'file' && ModsManager::modExists('filemanager')) {
       if (isset($_FILES[$fieldname]) && $_FILES[$fieldname]['error'] !== UPLOAD_ERR_NO_FILE) {
         $upload = [...$_FILES[$fieldname]];
         $file = $this->getService('filemanager/file')->add($upload['name'], $upload['tmp_name'], 'Y');
@@ -133,7 +133,7 @@ class Settings extends Service
   public function remove($context, $fieldname)
   {
     $record = $this->get($context, $fieldname);
-    $fileModExist = $this->getService('modcontrol/control')->moduleExists('filemanager');
+    $fileModExist = ModsManager::modExists('filemanager');
     $isFile = $fileModExist && $record?->ds_format == 'file';
     $value = $record?->tx_fieldvalue;
 
