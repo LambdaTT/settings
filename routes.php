@@ -9,15 +9,6 @@ use SplitPHP\ModsManager;
 
 class Settings extends WebService
 {
-  private const SETTINGS_PERMISSIONS = [
-    'read'    => 'settings.settings.read',
-    'manage'  => 'settings.settings.manage'
-  ];
-
-  private const CUSTOMFIELD_PERMISSIONS = [
-    'read'    => 'settings.customfield.read',
-    'manage'  => 'settings.customfield.manage'
-  ];
 
   public function init()
   {
@@ -51,7 +42,7 @@ class Settings extends WebService
     });
 
     $this->addEndpoint('PUT', "/v1/setting", function (Request $request) {
-      $this->auth(self::SETTINGS_PERMISSIONS['manage']);
+      $this->auth();
 
       $body = $request->getBody();
       $data = isset($body['payload']) && is_array($body['payload']) ? $body['payload'] : $body;
@@ -79,7 +70,7 @@ class Settings extends WebService
     });
 
     $this->addEndpoint('POST', "/v1/custom-field", function (Request $request) {
-      $this->auth(self::CUSTOMFIELD_PERMISSIONS['manage']);
+      $this->auth();
 
       $data = $request->getBody();
       return $this->response
@@ -88,7 +79,7 @@ class Settings extends WebService
     }, true);
 
     $this->addEndpoint('DELETE', "/v1/custom-field/?entityName?/?fieldName?", function (Request $request) {
-      $this->auth(self::CUSTOMFIELD_PERMISSIONS['manage']);
+      $this->auth();
 
       $entityName = $request->getRoute()->params['entityName'];
       $fieldName = $request->getRoute()->params['fieldName'];
@@ -102,15 +93,12 @@ class Settings extends WebService
     }, true);
   }
 
-  private function auth(array|string $permissions)
+  private function auth()
   {
     if (!ModsManager::modExists('iam')) return;
 
     // Auth user login:
     if (!$this->getService('iam/session')->authenticate())
       throw new Unauthorized("Não autorizado.");
-
-    // Validate user permissions:
-    $this->getService('iam/permission')->requireAny($permissions);
   }
 }
